@@ -1,0 +1,27 @@
+[tool]
+name = "ocr-cli-tool"
+version = "0.1.0"
+description = "A command line tool for Optical Character Recognition (OCR)"
+authors = ["Your Name <your.email@example.com>"]
+license = "MIT"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[project]
+name = "ocr-cli-tool"
+version = "0.1.0"
+description = "A command line tool for Optical Character Recognition (OCR)"
+dependencies = [
+    "pillow",
+    "pytesseract",
+    "click"
+]
+
+[tool.poetry]
+name = "ocr-cli-tool"
+version = "0.1.0"
+description = "A command line tool for Optical Character Recognition (OCR)"
+authors = ["Your Name <your.email@example.com>"]
+license = "MIT"
