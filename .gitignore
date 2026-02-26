@@ -161,6 +161,7 @@ cython_debug/
 
 # 测试输出
 test_output/
+test_output*/
 
 # 环境变量配置（含密钥）
 set_env.sh
