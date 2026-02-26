@@ -1,4 +1,7 @@
-"""Local PaddleOCR engine — runs entirely on CPU."""
+"""Local PaddleOCR engine — runs entirely on CPU.
+
+Requires the 'local' extra: pip install dochain-ocr[local]
+"""
 
 import os
 import pathlib
@@ -7,7 +10,14 @@ from PIL import Image
 
 os.environ.setdefault("PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK", "True")
 
-from paddleocr import PaddleOCR  # noqa: E402
+try:
+    from paddleocr import PaddleOCR
+except ImportError:
+    raise ImportError(
+        "PaddleOCR is not installed. Install the 'local' extra to use local OCR:\n"
+        "  pip install dochain-ocr[local]\n"
+        "  # or: uv pip install dochain-ocr[local]"
+    )
 
 from .base import BaseOCREngine
 

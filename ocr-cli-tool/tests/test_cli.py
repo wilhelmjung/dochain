@@ -3,8 +3,8 @@ import sys
 from pathlib import Path
 from click.testing import CliRunner
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from src.cli import main
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+from dochain_ocr.cli import main
 
 class TestCli(unittest.TestCase):
 

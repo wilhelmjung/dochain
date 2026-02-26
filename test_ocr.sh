@@ -33,7 +33,7 @@ if [[ ! -x "$VENV_PYTHON" ]]; then
     echo "❌ 虚拟环境不存在，正在创建..."
     cd "$PROJECT_DIR"
     uv venv .venv
-    uv pip install --python .venv/bin/python -r requirements.txt
+    uv pip install --python .venv/bin/python -e ".[local]"
     echo "✅ 虚拟环境已创建并安装依赖"
 fi
 
@@ -79,7 +79,7 @@ run_single() {
     echo "📷 输入文件: $input"
     echo "🔧 引擎模式: $engine"
 
-    local CMD=("$VENV_PYTHON" -m src.cli --input "$input" --engine "$engine")
+    local CMD=("$VENV_PYTHON" -m dochain_ocr --input "$input" --engine "$engine")
     if [[ -n "$output" ]]; then
         CMD+=(--output "$output")
         echo "📄 输出文件: $output"
@@ -121,7 +121,7 @@ run_batch() {
         echo ""
         echo "--- [$name] ($engine) ---"
         cd "$PROJECT_DIR"
-        if "$VENV_PYTHON" -m src.cli --input "$f" --output "$outfile" --engine "$engine" 2>&1; then
+        if "$VENV_PYTHON" -m dochain_ocr --input "$f" --output "$outfile" --engine "$engine" 2>&1; then
             success=$((success + 1))
             echo "  → 保存到 $outfile"
         else
@@ -177,7 +177,7 @@ run_dir() {
             echo ""
             echo "--- [$basename] ($engine) ---"
             cd "$PROJECT_DIR"
-            if "$VENV_PYTHON" -m src.cli --input "$f" --output "$outfile" --engine "$engine" 2>&1; then
+            if "$VENV_PYTHON" -m dochain_ocr --input "$f" --output "$outfile" --engine "$engine" 2>&1; then
                 success=$((success + 1))
                 echo "  → $outfile"
             else

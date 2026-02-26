@@ -2,12 +2,8 @@ from pathlib import Path
 
 import click
 
-try:
-    from .ocr.base import create_engine
-    from .ocr.processors import ImageProcessor, SUPPORTED_SUFFIXES, PDF_SUFFIXES
-except ImportError:
-    from ocr.base import create_engine
-    from ocr.processors import ImageProcessor, SUPPORTED_SUFFIXES, PDF_SUFFIXES
+from .ocr.base import create_engine
+from .ocr.processors import ImageProcessor, SUPPORTED_SUFFIXES, PDF_SUFFIXES
 
 
 @click.command()

@@ -1,27 +1,31 @@
-[tool]
-name = "ocr-cli-tool"
-version = "0.1.0"
-description = "A command line tool for Optical Character Recognition (OCR)"
-authors = ["Your Name <your.email@example.com>"]
-license = "MIT"
-
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
-name = "ocr-cli-tool"
+name = "dochain-ocr"
 version = "0.1.0"
-description = "A command line tool for Optical Character Recognition (OCR)"
+description = "Multi-engine OCR CLI tool with smart document type detection"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
 dependencies = [
-    "pillow",
-    "pytesseract",
-    "click"
+    "click>=8.1",
+    "pillow>=10.0",
+    "pymupdf>=1.24",
+    "requests>=2.31",
+    "opencv-python>=4.10",
+    "numpy>=2.0",
 ]
 
-[tool.poetry]
-name = "ocr-cli-tool"
-version = "0.1.0"
-description = "A command line tool for Optical Character Recognition (OCR)"
-authors = ["Your Name <your.email@example.com>"]
-license = "MIT"
+[project.optional-dependencies]
+local = [
+    "paddleocr>=2.9",
+    "paddlepaddle>=3.0",
+]
+
+[project.scripts]
+dochain-ocr = "dochain_ocr.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/dochain_ocr"]
