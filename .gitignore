@@ -162,6 +162,14 @@ cython_debug/
 # 测试输出
 test_output/
 test_output*/
+output/
+
+# 测试用例（含敏感发票数据）
+testcases/
+test1*
+
+# Excel 临时文件
+~$*.xlsx
 
 # 环境变量配置（含密钥）
 set_env.sh
