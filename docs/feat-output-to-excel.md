@@ -18,3 +18,16 @@
 一等座
 二等座
 商务座
+
+## 导出行为说明
+
+- `--excel` 仅支持 `smart` 和 `baidu` 引擎；`api` / `local` 会直接报错，不会生成空 Excel。
+- `smart` 引擎按“发票 -> 火车票 -> 通用 OCR”级联；只有发票和火车票结构化结果会写入 Excel。
+- 当 `smart` 回退到通用 OCR（`general`）时，说明当前文件不是支持的票据类型；该结果只用于纯文本识别，不会导出成 Excel 行。
+- 火车票金额优先读取 `ticket_rates`，同时兼容 `ticket_price` 和 `fare` 字段。
+
+## 验收脚本
+
+- 根目录 `test_excel_export.sh` 会做两段校验：
+  - 先验证 `api + --excel` 会 fail fast。
+  - 再执行 `smart` 批量导出，并检查列头、行数、必填字段和票种枚举。

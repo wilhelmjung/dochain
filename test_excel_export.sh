@@ -12,8 +12,9 @@
 #   1. 设置环境
 #   2. 加载 API Key
 #   3. 安装包（含 openpyxl 依赖）
-#   4. 运行 Excel 批量导出
-#   5. 验证结果
+#   4. 验证不支持的引擎会被拒绝
+#   5. 运行 Excel 批量导出
+#   6. 验证结果
 
 set -euo pipefail
 
@@ -23,6 +24,7 @@ VENV_DIR="$PROJECT_DIR/.venv"
 VENV_PYTHON="$VENV_DIR/bin/python"
 TESTCASES_DIR="$SCRIPT_DIR/testcases"
 OUTPUT_XLSX="/tmp/dochain_excel_test_$(date +%Y%m%d_%H%M%S).xlsx"
+UNSUPPORTED_XLSX="/tmp/dochain_excel_unsupported_$(date +%Y%m%d_%H%M%S).xlsx"
 
 PASS=0
 FAIL=0
@@ -112,9 +114,47 @@ fi
 echo ""
 
 # ------------------------------------------------------------------
-# Step 4: 运行 Excel 批量导出
+# Step 4: 验证不支持的引擎会被拒绝
 # ------------------------------------------------------------------
-echo "🚀 Step 4: 运行 Excel 批量导出"
+echo "🧪 Step 4: 验证不支持的引擎会被拒绝"
+echo "  输入目录: $TESTCASES_DIR"
+echo "  输出文件: $UNSUPPORTED_XLSX"
+echo "  引擎: api"
+echo ""
+
+cd "$PROJECT_DIR"
+set +e
+UNSUPPORTED_OUTPUT=$("$VENV_PYTHON" -m dochain_ocr \
+    --input "$TESTCASES_DIR" \
+    --excel "$UNSUPPORTED_XLSX" \
+    --engine api 2>&1)
+UNSUPPORTED_EXIT=$?
+set -e
+
+if [[ $UNSUPPORTED_EXIT -ne 0 ]]; then
+    pass "api 引擎已被正确拒绝 (exit=$UNSUPPORTED_EXIT)"
+else
+    fail "api 引擎未被拒绝，预期应 fail fast"
+fi
+
+if [[ "$UNSUPPORTED_OUTPUT" == *"does not support structured Excel export"* ]]; then
+    pass "错误信息正确: 不支持 Excel 结构化导出"
+else
+    fail "错误信息不符合预期: $UNSUPPORTED_OUTPUT"
+fi
+
+if [[ ! -f "$UNSUPPORTED_XLSX" ]]; then
+    pass "不支持的引擎未生成 Excel 文件"
+else
+    fail "不支持的引擎错误生成了 Excel 文件: $UNSUPPORTED_XLSX"
+fi
+
+echo ""
+
+# ------------------------------------------------------------------
+# Step 5: 运行 Excel 批量导出
+# ------------------------------------------------------------------
+echo "🚀 Step 5: 运行 Excel 批量导出"
 echo "  输入目录: $TESTCASES_DIR"
 echo "  输出文件: $OUTPUT_XLSX"
 echo "  引擎: smart"
@@ -129,11 +169,11 @@ cd "$PROJECT_DIR"
 echo ""
 
 # ------------------------------------------------------------------
-# Step 5: 验证结果
+# Step 6: 验证结果
 # ------------------------------------------------------------------
-echo "🔍 Step 5: 验证结果"
+echo "🔍 Step 6: 验证结果"
 
-# 5a. Excel 文件是否生成
+# 6a. Excel 文件是否生成
 if [[ -f "$OUTPUT_XLSX" ]]; then
     FILE_SIZE=$(stat -f%z "$OUTPUT_XLSX" 2>/dev/null || stat --format=%s "$OUTPUT_XLSX" 2>/dev/null || echo "unknown")
     pass "Excel 文件已生成: $OUTPUT_XLSX ($FILE_SIZE bytes)"
@@ -141,7 +181,7 @@ else
     fail "Excel 文件未生成: $OUTPUT_XLSX"
 fi
 
-# 5b. 用 Python 读取 Excel 验证内容
+# 6b. 用 Python 读取 Excel 验证内容
 "$VENV_PYTHON" - "$OUTPUT_XLSX" << 'PYEOF'
 import sys
 from openpyxl import load_workbook
@@ -156,7 +196,7 @@ rows = list(ws.iter_rows(min_row=2, values_only=True))
 
 errors = []
 
-# 5b-1: 检查列数
+# 6b-1: 检查列数
 EXPECTED_COLS = ["序号", "数电发票号码", "发票代码", "发票号码", "开票日期",
                  "金额", "票面税额", "有效抵扣税额", "购买方识别号",
                  "销售方纳税人名称", "销售方纳税人识别号", "发票来源",
@@ -171,14 +211,14 @@ else:
     errors.append(f"列头不匹配: 缺少{missing}, 多余{extra}")
     print(f"  ❌ 列头不匹配")
 
-# 5b-2: 检查行数 (testcases/ 下有 5 个文件)
+# 6b-2: 检查行数 (testcases/ 下有 5 个文件)
 if len(rows) >= 4:
     print(f"  ✅ 数据行数: {len(rows)} 条记录")
 else:
     errors.append(f"数据行数不足: {len(rows)}")
     print(f"  ❌ 数据行数不足: {len(rows)}")
 
-# 5b-3: 检查必填字段不为空 (开票日期, 金额, 票种)
+# 6b-3: 检查必填字段不为空 (开票日期, 金额, 票种)
 COL_IDX = {h: i for i, h in enumerate(headers)}
 required_fields = ["开票日期", "金额", "票种"]
 empty_count = 0
@@ -194,7 +234,7 @@ if empty_count == 0:
 else:
     print(f"  ❌ {empty_count} 个必填字段为空")
 
-# 5b-4: 检查票种枚举值
+# 6b-4: 检查票种枚举值，确保未把 general fallback 导出成“未知”
 VALID_TYPES = {
     "数电发票（铁路电子客票）",
     "数电发票（增值税专用发票）",
@@ -216,7 +256,7 @@ else:
     errors.append(f"非法票种: {invalid_types}")
     print(f"  ❌ 非法票种: {invalid_types}")
 
-# 5b-5: 打印摘要表
+# 6b-5: 打印摘要表
 print("")
 print("  ┌──────────────────────────────────────────────────────────────────┐")
 print(f"  │ {'序号':^4} │ {'发票来源':^14} │ {'票种':^20} │ {'金额':^10} │")

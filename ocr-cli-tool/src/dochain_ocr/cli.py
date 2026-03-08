@@ -33,6 +33,29 @@ def main(
 ):
     file_path = Path(input_path)
 
+    if not file_path.exists():
+        raise click.ClickException(f"Input path does not exist: {file_path}")
+
+    # Validate input shape before constructing engines that may require credentials.
+    if excel_path and engine_type not in {"baidu", "smart"}:
+        raise click.ClickException(
+            f"Engine '{engine_type}' does not support structured Excel export. "
+            "Use --engine baidu or --engine smart."
+        )
+
+    if file_path.is_dir():
+        if not excel_path:
+            raise click.ClickException(
+                "When --input is a directory, --excel <output.xlsx> is required."
+            )
+    else:
+        suffix = file_path.suffix.lower()
+        if suffix not in SUPPORTED_SUFFIXES:
+            raise click.ClickException(
+                f"Unsupported file type: {suffix}. "
+                f"Supported: {', '.join(sorted(SUPPORTED_SUFFIXES))}"
+            )
+
     # Build engine
     engine_kwargs: dict = {}
     if engine_type == "api":
@@ -53,21 +76,10 @@ def main(
 
     # --- Directory + Excel batch mode ---
     if file_path.is_dir():
-        if not excel_path:
-            raise click.ClickException(
-                "When --input is a directory, --excel <output.xlsx> is required."
-            )
         _run_batch_excel(file_path, excel_path, ocr_engine, engine_type)
         return
 
     # --- Single file mode ---
-    suffix = file_path.suffix.lower()
-    if suffix not in SUPPORTED_SUFFIXES:
-        raise click.ClickException(
-            f"Unsupported file type: {suffix}. "
-            f"Supported: {', '.join(sorted(SUPPORTED_SUFFIXES))}"
-        )
-
     image_processor = ImageProcessor()
 
     # Load images (PDF → multi-page, image → single)
@@ -114,10 +126,9 @@ def _run_single_excel(
     records = []
     for i, img in enumerate(images):
         processed = image_processor.preprocess_image(img)
-        if hasattr(ocr_engine, "recognize_structured"):
-            mode, data = ocr_engine.recognize_structured(processed)
-        else:
-            click.echo(f"⚠️  Engine does not support structured output, skipping Excel for page {i + 1}")
+        mode, data = ocr_engine.recognize_structured(processed)
+        if mode == "general":
+            click.echo(f"⚠️  Page {i + 1} is not a supported invoice/ticket, skipping Excel row")
             continue
 
         rec = extract_invoice_record(
@@ -182,11 +193,9 @@ def _run_batch_excel(
             # OCR each page
             for i, img in enumerate(images):
                 processed = image_processor.preprocess_image(img)
-
-                if hasattr(ocr_engine, "recognize_structured"):
-                    mode, data = ocr_engine.recognize_structured(processed)
-                else:
-                    click.echo(f"  ⚠️  Engine does not support structured output, skipping")
+                mode, data = ocr_engine.recognize_structured(processed)
+                if mode == "general":
+                    click.echo("  ⚠️  Not a supported invoice/ticket, skipping Excel row")
                     continue
 
                 seq += 1

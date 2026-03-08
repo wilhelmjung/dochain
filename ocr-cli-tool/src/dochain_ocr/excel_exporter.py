@@ -169,8 +169,12 @@ def extract_invoice_record(
         # 开票日期: prefer invoice_date, fallback to date
         rec.开票日期 = results.get("invoice_date", "") or results.get("date", "")
 
-        # 金额: ticket_rates (e.g. "￥45.00元"), or fare
-        raw_price = results.get("ticket_rates", "") or results.get("fare", "")
+        # 金额: prefer ticket_rates, but some responses use ticket_price or fare
+        raw_price = (
+            results.get("ticket_rates", "")
+            or results.get("ticket_price", "")
+            or results.get("fare", "")
+        )
         rec.金额 = _clean_price(raw_price)
 
         # 税额

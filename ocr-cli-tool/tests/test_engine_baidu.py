@@ -110,7 +110,7 @@ class TestBaiduFormatters:
 
     def test_invalid_mode(self):
         with pytest.raises(ValueError, match="Unknown Baidu OCR mode"):
-            self.EngineClass(mode="invalid")
+            self.EngineClass(api_key="test_key", secret_key="test_secret", mode="invalid")
 
 
 # ---------------------------------------------------------------------------

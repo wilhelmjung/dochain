@@ -52,6 +52,17 @@ class FakeEngine(BaseOCREngine):
         return self.text
 
 
+class FakeStructuredEngine(FakeEngine):
+    """A trivial structured engine for Excel-mode tests."""
+
+    def __init__(self, responses: list[tuple[str, dict]] | None = None):
+        super().__init__()
+        self.responses = responses or [("invoice", {"words_result": {}})]
+
+    def recognize_structured(self, image: Image.Image) -> tuple[str, dict]:
+        return self.responses.pop(0)
+
+
 # ---------------------------------------------------------------------------
 # CLI tests
 # ---------------------------------------------------------------------------
@@ -110,6 +121,28 @@ class TestCLI:
         runner.invoke(main, ["--input", str(dummy_image), "--engine", "baidu"])
         mock_create.assert_called_once()
         assert mock_create.call_args[0][0] == "baidu"
+
+    def test_excel_requires_structured_engine(self, runner, dummy_image, tmp_path):
+        out = tmp_path / "result.xlsx"
+
+        result = runner.invoke(main, ["--input", str(dummy_image), "--excel", str(out), "--engine", "api"])
+
+        assert result.exit_code != 0
+        assert "does not support structured Excel export" in result.output
+
+    @patch("dochain_ocr.cli.create_engine")
+    def test_excel_skips_general_fallback_rows(self, mock_create, runner, dummy_image, tmp_path):
+        mock_create.return_value = FakeStructuredEngine(
+            responses=[("general", {"words_result": [{"words": "not an invoice"}]})]
+        )
+        out = tmp_path / "result.xlsx"
+
+        result = runner.invoke(main, ["--input", str(dummy_image), "--excel", str(out), "--engine", "smart"])
+
+        assert result.exit_code == 0
+        assert "skipping Excel row" in result.output
+        assert "无有效发票记录可导出" in result.output
+        assert not out.exists()
 
     def test_invalid_engine(self, runner, dummy_image):
         result = runner.invoke(main, ["--input", str(dummy_image), "--engine", "unknown"])
