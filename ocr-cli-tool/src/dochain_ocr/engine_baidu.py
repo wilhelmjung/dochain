@@ -124,6 +124,43 @@ class BaiduOCREngine(BaseOCREngine):
         finally:
             self.mode = old_mode
 
+    def recognize_structured(self, image: Image.Image) -> tuple[str, dict]:
+        """Call the configured Baidu OCR API and return (mode, raw_data).
+
+        Returns:
+            A tuple of (mode, words_result_dict) for downstream structured
+            processing (e.g. Excel export).
+        """
+        token = self._get_access_token()
+        img_b64 = self._encode_image(image)
+        url = self.API_URLS[self.mode]
+
+        resp = requests.post(
+            url,
+            params={"access_token": token},
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            data={"image": img_b64},
+            timeout=60,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+
+        if "error_code" in data:
+            raise RuntimeError(
+                f"Baidu OCR error {data['error_code']}: {data.get('error_msg', '')}"
+            )
+
+        return self.mode, data
+
+    def recognize_structured_with_mode(self, image: Image.Image, mode: str) -> tuple[str, dict]:
+        """Call a specific Baidu OCR API and return (mode, raw_data)."""
+        old_mode = self.mode
+        self.mode = mode
+        try:
+            return self.recognize_structured(image)
+        finally:
+            self.mode = old_mode
+
     @staticmethod
     def _encode_image(image: Image.Image) -> str:
         buf = io.BytesIO()

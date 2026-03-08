@@ -10,6 +10,8 @@
 #   ./test_ocr.sh --batch local                           # 批量测试，指定引擎
 #   ./test_ocr.sh --dir <输入目录> <输出目录>              # 目录扫描，结果输出到指定目录
 #   ./test_ocr.sh --dir ./invoices ./results smart        # 目录扫描，指定引擎
+#   ./test_ocr.sh --excel <输入目录> <输出.xlsx>           # 批量识别 → Excel
+#   ./test_ocr.sh --excel ./invoices ./out.xlsx smart     # 批量识别 → Excel，指定引擎
 #
 # 引擎模式:
 #   smart  — 智能级联（默认）：发票→火车票→通用 OCR，全部使用百度 API
@@ -198,6 +200,38 @@ run_dir() {
 }
 
 # ---------------------------------------------------------------------------
+# Excel 批量导出模式
+# ---------------------------------------------------------------------------
+run_excel() {
+    local input_dir="$1"
+    local output_xlsx="$2"
+    local engine="${3:-smart}"
+
+    if [[ ! -d "$input_dir" ]]; then
+        echo "❌ 输入目录不存在: $input_dir"
+        exit 1
+    fi
+
+    # 转为绝对路径
+    input_dir="$(cd "$input_dir" && pwd)"
+    # 输出文件: 如果是相对路径，基于当前工作目录
+    if [[ "$output_xlsx" != /* ]]; then
+        output_xlsx="$(pwd)/$output_xlsx"
+    fi
+    mkdir -p "$(dirname "$output_xlsx")"
+
+    load_env "$engine"
+
+    echo "📊 Excel 批量导出模式 — 引擎: $engine"
+    echo "📂 输入目录: $input_dir"
+    echo "📄 输出文件: $output_xlsx"
+    echo "=========================================="
+
+    cd "$PROJECT_DIR"
+    "$VENV_PYTHON" -m dochain_ocr --input "$input_dir" --excel "$output_xlsx" --engine "$engine"
+}
+
+# ---------------------------------------------------------------------------
 # 主入口
 # ---------------------------------------------------------------------------
 case "${1:-}" in
@@ -210,6 +244,13 @@ case "${1:-}" in
             exit 1
         fi
         run_dir "$2" "$3" "${4:-smart}"
+        ;;
+    --excel)
+        if [[ -z "${2:-}" || -z "${3:-}" ]]; then
+            echo "用法: $0 --excel <输入目录> <输出.xlsx> [local|api|baidu|smart]"
+            exit 1
+        fi
+        run_excel "$2" "$3" "${4:-smart}"
         ;;
     *)
         run_single "${1:-$SCRIPT_DIR/test1.jpg}" "${2:-}" "${3:-smart}"

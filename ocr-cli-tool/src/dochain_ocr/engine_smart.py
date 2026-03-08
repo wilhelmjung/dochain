@@ -51,3 +51,31 @@ class SmartOCREngine(BaseOCREngine):
         result = self._engine.recognize_with_mode(image, "general")
         click.echo("  [smart] ✅ 通用 OCR 完成")
         return result
+
+    def recognize_structured(self, image: Image.Image) -> tuple[str, dict]:
+        """Try invoice → train_ticket → general, return (mode, raw_data)."""
+
+        # --- 1. Try invoice ---
+        try:
+            mode, data = self._engine.recognize_structured_with_mode(image, "invoice")
+            click.echo("  [smart] ✅ 百度发票识别成功")
+            return mode, data
+        except RuntimeError as e:
+            if "282103" not in str(e):
+                raise
+
+        # --- 2. Try train ticket ---
+        click.echo("  [smart] ⚠️ 非发票，尝试火车票识别...")
+        try:
+            mode, data = self._engine.recognize_structured_with_mode(image, "train_ticket")
+            click.echo("  [smart] ✅ 百度火车票识别成功")
+            return mode, data
+        except RuntimeError as e:
+            if "282103" not in str(e) and "282110" not in str(e):
+                raise
+
+        # --- 3. Fallback to general OCR ---
+        click.echo("  [smart] ⚠️ 非火车票，使用通用高精度 OCR...")
+        mode, data = self._engine.recognize_structured_with_mode(image, "general")
+        click.echo("  [smart] ✅ 通用 OCR 完成")
+        return mode, data

@@ -15,7 +15,8 @@ dochain/
 │   │   ├── engine_baidu.py     # 百度云 OCR
 │   │   ├── engine_api.py       # PaddleX 云端 API
 │   │   ├── engine_local.py     # PaddleOCR 本地推理
-│   │   └── processors.py       # 图像/PDF 预处理
+│   │   ├── processors.py       # 图像/PDF 预处理
+│   │   └── excel_exporter.py   # 发票 → Excel 导出
 │   └── tests/
 ├── test_ocr.sh                 # 测试脚本（单文件/批量/目录）
 ├── set_env.example.sh          # 环境变量模板
@@ -91,6 +92,23 @@ python -m dochain_ocr --input image.png --engine local # 本地 PaddleOCR
 dochain-ocr --input invoice.pdf
 dochain-ocr --help
 ```
+
+#### 批量识别 → Excel 导出
+
+```bash
+# 扫描目录中所有发票文件，汇总输出到一个 Excel
+dochain-ocr --input ./invoices/ --excel output.xlsx
+
+# 指定引擎
+dochain-ocr --input ./invoices/ --excel output.xlsx --engine smart
+
+# 单文件也支持 Excel 输出
+dochain-ocr --input invoice.pdf --excel result.xlsx
+```
+
+Excel 输出列：序号、数电发票号码、发票代码、发票号码、开票日期、金额、票面税额、有效抵扣税额、购买方识别号、销售方纳税人名称、销售方纳税人识别号、发票来源、票种、货物或劳务名称、旅客姓名、出行日期、乘客姓名、乘机日期、座位类型
+
+支持的票种：数电发票（增值税专用发票）、数电发票（普通发票）、数电发票（铁路电子客票）、数电发票（航空运输电子客票行程单）、数电发票（通行费发票）、区块链发票
 
 **支持格式**：`.pdf` `.jpg` `.jpeg` `.png` `.bmp` `.tiff` `.webp`
 
